@@ -8,6 +8,7 @@
         public required string Path { get; set; }
         public required string[] HeaderShema { get; set; }
         public required string[] DateFormats { get; set; }
+        public required int MaxPossibleStrategies { get; set; }
     }
     /// <summary>
     /// Пердставление конфигов: Options

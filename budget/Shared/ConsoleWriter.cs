@@ -29,17 +29,17 @@ namespace budget.Shared
 
             sb.AppendLine($"| {Math.Round(r.Difference.CurrentRate, 2)} | {Math.Round(r.OptimalRate, 2)} | {Math.Round(r.Difference.Value, 2)} | ");
             sb.AppendLine($"Вывод: {(r.Conclusion ? ":) Будет положительный остаток" : ":( Бюджета не хватит")}");
-            if (r.Difference3day is not null || r.Difference5day is not null)
+            if (r.PossibleStrategies.Count != 0)
             {
                 sb.AppendLine();
-                sb.AppendLine($"Попытка посчитать расход при отсутвии трат на ближайшие 3 и 5 дней:");
+                sb.AppendLine($"Попытка посчитать расход при отсутвии трат на ближайшие дни:");
                 sb.AppendLine($"Таблица - прогноз расхода");
                 sb.AppendLine($"| Без трат (дней) | Будет расход (р/день) | Разница (р/день) | Комментарий |");
                 sb.AppendLine($"|---|---|---|---|");
-                sb.AppendLine($"| 3 дня | {Math.Round(r.Difference3day!.CurrentRate, 2)} | {Math.Round(r.Difference3day!.Value, 2)} | {(r.Difference3day!.Value > 0 ? "<- можно жить |" : "|")}");
-                sb.AppendLine($"| 5 дней | {Math.Round(r.Difference5day!.CurrentRate, 2)} | {Math.Round(r.Difference5day!.Value, 2)} | {(r.Difference3day!.Value > 0 ? "<- можно жить |" : "|")}");
-                if (r.Difference3day!.Value < 0 && r.Difference3day!.Value < 0) {
-                    sb.AppendLine($"Ни одна из стратегий не положительна, вывод: стоит пересмотреть траты и затянуть пояса (T_T)");
+                int i = 0;
+                foreach (var ps in r.PossibleStrategies)
+                {
+                    sb.AppendLine($"| {++i} | {Math.Round(ps.CurrentRate, 2)} | {Math.Round(ps.Value, 2)} | {(ps.Value > 0 ? "<- можно жить |" : "|")}");
                 }
             }
 

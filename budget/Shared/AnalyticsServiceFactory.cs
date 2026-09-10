@@ -61,6 +61,7 @@ namespace budget.Shared
                 writer = WriterConfigurator.GetConsoleWriter();
 
             return new ExpenseRateService(
+                maxPossibleStrategies: cfg.expenseConfig.MaxPossibleStrategies,
                 expenses: Repository.GetExpenses(
                     opts.InputExpenseFilePath ?? throw new ArgumentException("No input file path provided, see --help"),
                     cfg.expenseConfig.HeaderShema,

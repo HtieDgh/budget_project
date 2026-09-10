@@ -12,13 +12,15 @@ namespace budget.Services
         protected readonly DateOnly curDate_;
         protected readonly List<Expense> expenses_;
         protected readonly long currentBudget_;
-        public ExpenseRateService(List<Expense> expenses, IWriter writer, long currentBudget, DateOnly start, DateOnly end, DateOnly cur) : base(writer)
+        protected readonly int maxPossibleStrategies_;
+        public ExpenseRateService(int maxPossibleStrategies, List<Expense> expenses, IWriter writer, long currentBudget, DateOnly start, DateOnly end, DateOnly cur) : base(writer)
         {
             startDate_ = start;
             endDate_ = end;
             curDate_ = cur;
             expenses_ = expenses;
             currentBudget_ = currentBudget;
+            maxPossibleStrategies_ = maxPossibleStrategies;
         }
         public record Difference(decimal Value, decimal CurrentRate);
         /// <summary>
@@ -28,8 +30,7 @@ namespace budget.Services
         {
             public decimal OptimalRate;
             public Difference Difference;
-            public Difference? Difference3day;
-            public Difference? Difference5day;
+            public List<Difference> PossibleStrategies;
             public bool Conclusion;
             public DateOnly StartDate;
             public DateOnly EndDate;
@@ -45,6 +46,7 @@ namespace budget.Services
                 EndDate = endDate;
                 CurDate = curDate;
                 CurentBudget = curentBudget;
+                PossibleStrategies = new List<Difference>();
             }
         }
 
@@ -58,6 +60,7 @@ namespace budget.Services
                 .Where(
                     e => e.Date.CompareTo(startDate_) >= 0 && e.Date.CompareTo(endDate_) == -1
                 );
+
             var cRate = tmplinq
                 .Sum(e => e.Date.CompareTo(curDate_) <= 0 ? e.Sum : 0.0m);//Сумма всех расходов
 
@@ -78,16 +81,19 @@ namespace budget.Services
                     curDate_,
                     currentBudget_
                 );
-            if (diff < 0.0m)//Если бюджета все же не хватит , расчет если не хавать 3 и 5 дней
+            
+            if (diff < 0.0m)//Если бюджета все же не хватит, попробовать посчитать расходы если не тратить некоторое время
             {
-                var newDate3 = curDate_.AddDays(3);//TODO учесть что возможен выход за endDate_
-                var newDate5 = curDate_.AddDays(5);//TODO учесть что возможен выход за endDate_
-
-                var newRate3 = tmplinq.Sum(e => e.Date.CompareTo(newDate3) <= 0 ? e.Sum : 0.0m) / ( newDate3.DayNumber - startDate_.DayNumber );
-                var newRate5 = tmplinq.Sum(e => e.Date.CompareTo(newDate5) <= 0 ? e.Sum : 0.0m) / ( newDate5.DayNumber - startDate_.DayNumber );
-
-                report.Difference3day = new(optimalRate - newRate3, newRate3);
-                report.Difference5day = new(optimalRate - newRate5, newRate5);
+                var intermediateDiff = -1.0m;
+                var newRate=0.0m;
+                DateOnly newDate;
+                for (var i = 1; intermediateDiff < 0.0m && i < maxPossibleStrategies_; i++)
+                {
+                    newDate = curDate_.AddDays(i);//TODO учесть что возможен выход за endDate_
+                    newRate = tmplinq.Sum(e => e.Date.CompareTo(newDate) <= 0 ? e.Sum : 0.0m) / (newDate.DayNumber - startDate_.DayNumber);
+                    intermediateDiff = optimalRate - newRate;
+                    report.PossibleStrategies.Add(new(intermediateDiff, newRate));
+                }
             }
 
             writer_.AddReport(
