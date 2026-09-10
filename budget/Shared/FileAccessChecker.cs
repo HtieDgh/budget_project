@@ -5,7 +5,7 @@
         /// <summary>
         /// Результат проверки
         /// </summary>
-        public enum WriteAccessResult
+        public enum AccessResult
         {
             Success,
             FileLocked,
@@ -14,7 +14,7 @@
             UnknownError
         }
 
-        public static WriteAccessResult CheckWriteAccess(string filePath)
+        public static AccessResult CheckWriteAccess(string filePath)
         {
             try
             {
@@ -22,7 +22,7 @@
                 string? directory = Path.GetDirectoryName(filePath);
                 if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 {
-                    return WriteAccessResult.DirectoryNotExists;
+                    return AccessResult.DirectoryNotExists;
                 }
 
                 // Пытаемся открыть файл для записи
@@ -34,22 +34,22 @@
                     {
                         FileAttributes attrs = File.GetAttributes(filePath);
                         if (attrs.HasFlag(FileAttributes.ReadOnly))
-                            return WriteAccessResult.NoPermission;
+                            return AccessResult.NoPermission;
                     }
-                    return WriteAccessResult.Success;
+                    return AccessResult.Success;
                 }
             }
             catch (IOException)
             {
-                return WriteAccessResult.FileLocked;
+                return AccessResult.FileLocked;
             }
             catch (UnauthorizedAccessException)
             {
-                return WriteAccessResult.NoPermission;
+                return AccessResult.NoPermission;
             }
             catch
             {
-                return WriteAccessResult.UnknownError;
+                return AccessResult.UnknownError;
             }
         }
     }

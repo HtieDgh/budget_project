@@ -34,9 +34,9 @@ namespace budget.Shared
         /// </summary>
         /// <param name="reader">Провайдер входных строк</param>
         /// <param name="config">Описание параметров csv парсера такие как  разделитель, последовательность новой строки и знака ковычки(<see cref="CsvConfig">)</param>
-        public CsvReader(TextReader reader, CsvConfig? config) : base(reader)
+        public CsvReader(TextReader reader, CsvConfig config) : base(reader)
         {
-            m_config = config?? CsvConfig.Default;
+            m_config = config;
         }
 
         public override IEnumerable<string[]> Read()
@@ -82,7 +82,7 @@ namespace budget.Shared
         }
 
         /// <summary>
-        /// Проверяет возможность продалжения парсинга, выбирает как парсить след ячейку (с m_config.QuotationMark или без)
+        /// Проверяет возможность продалжения парсинга, выбирает как парсить след ячейку (с cfg_.QuotationMark или без)
         /// </summary>
         /// <param name="line"></param>
         /// <param name="i"></param>
@@ -99,7 +99,7 @@ namespace budget.Shared
         }
 
         /// <summary>
-        /// Получить ячейку, которая не экранирована символом m_config.QuotationMark
+        /// Получить ячейку, которая не экранирована символом cfg_.QuotationMark
         /// </summary>
         /// <param name="line"></param>
         /// <param name="i"></param>

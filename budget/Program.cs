@@ -17,17 +17,19 @@ namespace budget
         {
             public string? InputExpenseFilePath { get; set; }
             public string? OutputFilePath { get; set; }
-            public string? startDate { get; set; }
-            public string? endDate { get; set; }
-            public string? curDate { get; set; }
-            public string? currentBudget { get; set; }
+            public string? StartDate { get; set; }
+            public string? EndDate { get; set; }
+            public string? CurDate { get; set; }
+            public string? CurrentBudget { get; set; }
+            public string? InputOcrImgesDirectory { get; set; }
 
             public static readonly string InputExpenseFilePath_d = "Input file in csv format. Default as in config file.";
             public static readonly string OutputFilePath_d = "Output file. File wil be overitten.";
-            public static readonly string startDate_d = "The date from which to take statistics into account. Default is DateOnly:MinValue";
-            public static readonly string endDate_d = "The date up to which statistics should be taken into account, not inclusive. Default is DateOnly:MaxValue";
-            public static readonly string curDate_d = "Current date. Default is today.";
-            public static readonly string currentBudget_d = "Current budget.";
+            public static readonly string StartDate_d = "The date from which to take statistics into account. Default is DateOnly:MinValue";
+            public static readonly string EndDate_d = "The date up to which statistics should be taken into account, not inclusive. Default is DateOnly:MaxValue";
+            public static readonly string CurDate_d = "Current date. Default is today.";
+            public static readonly string CurrentBudget_d = "Current budget.";
+            public static readonly string InputOcrImgesDirectory_d = "Use OCR to read Sberbank mobile app screenshotes. Option -i will be ignored.";
             public static readonly string helpText =
                 """
                 USAGE:
@@ -112,58 +114,83 @@ namespace budget
 
         public static int Main(string[] args)
         {
-            // create a generic parser for the ApplicationArguments type
-            var p = new FluentCommandLineParser<Options>();
-
+            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
             // Настройка парсера
-            p.Setup(arg => arg.InputExpenseFilePath)
-             .As('i', "input")// Короткое и длинное имя.
-             .WithDescription(InputExpenseFilePath_d)
-             .SetDefault("./csv/expense.csv");//Описание к параметру
+            var p = new FluentCommandLineParser<Options>();
+            p.SetupHelp("?", "help")
+              .WithCustomFormatter(new Formater())
+              .Callback(text => Console.WriteLine(text));
 
             p.Setup(arg => arg.OutputFilePath)
              .As('o', "output")
              .WithDescription(OutputFilePath_d);
 
-            p.Setup(arg => arg.startDate)
+            p.Setup(arg => arg.StartDate)
              .As('s', "start-date")
-             .WithDescription(startDate_d);
+             .WithDescription(StartDate_d);
 
-            p.Setup(arg => arg.endDate)
+            p.Setup(arg => arg.EndDate)
              .As('e', "end-date")
-             .WithDescription(endDate_d);
+             .WithDescription(EndDate_d);
 
-            p.Setup(arg => arg.currentBudget)
+            p.Setup(arg => arg.InputOcrImgesDirectory)
+             .As('f', "from-images")
+             .WithDescription(InputOcrImgesDirectory_d);
+
+            p.Setup(arg => arg.CurrentBudget)
              .As('b', "current-budget")
-             .WithDescription(currentBudget_d)
+             .WithDescription(CurrentBudget_d)
              .Required();
 
-            p.Setup(arg => arg.curDate)
+            p.Setup(arg => arg.CurDate)
              .As('t', "today")
-             .WithDescription(curDate_d)
+             .WithDescription(CurDate_d)
              .SetDefault(DateOnly.FromDateTime(DateTime.Now.ToUniversalTime()).ToString("yyyy-MM-dd"));
 
-            p.SetupHelp("?", "help")
-              .WithCustomFormatter(new Formater())
-              .Callback(text => Console.WriteLine(text));
-
-            var result = p.Parse(args);
-
-            if (result.HasErrors)
+            try
             {
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // Чтение конфига
+                string json = File.ReadAllText( Path.Combine(AppContext.BaseDirectory, ".\\.venv\\config.json") );
+                using JsonDocument doc = JsonDocument.Parse(json);
+                JsonElement root = doc.RootElement;
+                Config.i().SetConfig(
+                    root.GetProperty("Expense").Deserialize<ExpenseConfig>() ?? throw new Exception("config can't be read"),
+                    root.GetProperty("Options").Deserialize<OptionsConfig>() ?? throw new Exception("config can't be read"),
+                    root.GetProperty("OCRReader").Deserialize<OCRReaderConfig>() ?? throw new Exception("config can't be read")
+                );
+
+                p.Setup(arg => arg.InputExpenseFilePath)
+                 .As('i', "input")
+                 .WithDescription(InputExpenseFilePath_d)
+                 .SetDefault(Config.i().ExpenseConfig.Path);
+
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                // Парсинг параметров
+                var result = p.Parse(args);
+
+                if (result.HasErrors)
+                {
+                    p.HelpOption.ShowHelp(p.Options);
+                    return 1;
+                }
+
+                if (result.HelpCalled)
+                    return 0;
+
+                var resCode = OptionsHandler(p.Object);
+
+                if (resCode != 0)
+                    p.HelpOption.ShowHelp(p.Options);
+
+                return resCode;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
                 p.HelpOption.ShowHelp(p.Options);
                 return 1;
             }
-
-            if (result.HelpCalled)
-                return 0;
-
-            var resCode = OptionsHandler(p.Object);
-
-            if (resCode != 0)
-                p.HelpOption.ShowHelp(p.Options);
-
-            return resCode;
         }
 
         /// <summary>
@@ -177,20 +204,10 @@ namespace budget
             try
             {
                 //Реализация без Microsoft.Extensions.DependencyInjection
-
-                string json = File.ReadAllText(".\\.venv\\config.json");
-                using JsonDocument doc = JsonDocument.Parse(json);
-
-                JsonElement root = doc.RootElement;
-
-                var cfg = new Config(
-                    root.GetProperty("Expense").Deserialize<ExpenseConfig>() ?? throw new Exception("config can't be read"),
-                    root.GetProperty("Options").Deserialize<OptionsConfig>() ?? throw new Exception("config can't be read") 
-                );
                 var controller = new Controller();
 
                 //Регистрация сервисов
-                controller.addService(ExpenseRateServiceFactory.i().CreateService(opts, cfg));
+                controller.addService(ExpenseRateServiceFactory.i().CreateService(opts, Config.i()));
 
                 //Запуск
                 controller.Run();
@@ -199,7 +216,7 @@ namespace budget
             }
             catch (AggregateException ex)
             {
-                // Обработка всех исключений в режиме full
+                // Обработка всех исключений
                 foreach (var innerEx in ex.InnerExceptions)
                 {
                     Console.WriteLine($"Error: {innerEx.Message}");

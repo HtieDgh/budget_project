@@ -31,18 +31,18 @@ namespace budget.Shared
             DateOnly
                 endDate = DateOnly.MaxValue,
                 startDate = DateOnly.MinValue,
-                curDate = DateOnly.ParseExact(opts.curDate, cfg.optionsConfig.DateFormats, CultureInfo.InvariantCulture);
+                curDate = DateOnly.ParseExact(opts.CurDate, cfg.OptionsConfig.DateFormats, CultureInfo.InvariantCulture);
 
-            if (opts.endDate is not null)
+            if (opts.EndDate is not null)
             {
-                endDate = DateOnly.ParseExact(opts.endDate, cfg.optionsConfig.DateFormats, CultureInfo.InvariantCulture);
+                endDate = DateOnly.ParseExact(opts.EndDate, cfg.OptionsConfig.DateFormats, CultureInfo.InvariantCulture);
             }
-            if (opts.startDate is not null)
+            if (opts.StartDate is not null)
             {
-                startDate = DateOnly.ParseExact(opts.startDate, cfg.optionsConfig.DateFormats, CultureInfo.InvariantCulture);
+                startDate = DateOnly.ParseExact(opts.StartDate, cfg.OptionsConfig.DateFormats, CultureInfo.InvariantCulture);
             }
 
-            if (!long.TryParse(opts.currentBudget, out var curBudget)) {
+            if (!long.TryParse(opts.CurrentBudget, out var curBudget)) {
                 throw new ArgumentException("current-budget option is wrong, please try again");
             }
 
@@ -51,7 +51,7 @@ namespace budget.Shared
             if (opts.OutputFilePath != null)//Проверка на доступ к записи
             {
                 var res = FileAccessChecker.CheckWriteAccess(opts.OutputFilePath);
-                if (res != FileAccessChecker.WriteAccessResult.Success)
+                if (res != FileAccessChecker.AccessResult.Success)
                     throw new ArgumentException($"No access to ({opts.OutputFilePath}): {res}");
             }
 
@@ -61,11 +61,12 @@ namespace budget.Shared
                 writer = WriterConfigurator.GetConsoleWriter();
 
             return new ExpenseRateService(
-                maxPossibleStrategies: cfg.expenseConfig.MaxPossibleStrategies,
+                maxPossibleStrategies: cfg.ExpenseConfig.MaxPossibleStrategies,
                 expenses: Repository.GetExpenses(
                     opts.InputExpenseFilePath ?? throw new ArgumentException("No input file path provided, see --help"),
-                    cfg.expenseConfig.HeaderShema,
-                    cfg.expenseConfig.DateFormats
+                    cfg.ExpenseConfig.HeaderShema,
+                    cfg.ExpenseConfig.DateFormats,
+                    opts.InputOcrImgesDirectory
                 ),
                 writer: writer,
                 start: startDate,

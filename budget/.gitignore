@@ -238,5 +238,7 @@ _Pvt_Extensions
 
 # secrets
 .venv/
+.imgs/
+.tessdata/
 csv/
 Properties/
