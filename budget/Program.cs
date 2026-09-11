@@ -24,7 +24,7 @@ namespace budget
             public string? InputOcrImgesDirectory { get; set; }
 
             public static readonly string InputExpenseFilePath_d = "Input file in csv format. Default as in config file.";
-            public static readonly string OutputFilePath_d = "Output file. File wil be overitten.";
+            public static readonly string OutputFilePath_d = "Write JSON output to file. File wil be overitten.";
             public static readonly string StartDate_d = "The date from which to take statistics into account. Default is DateOnly:MinValue";
             public static readonly string EndDate_d = "The date up to which statistics should be taken into account, not inclusive. Default is DateOnly:MaxValue";
             public static readonly string CurDate_d = "Current date. Default is today.";

@@ -41,9 +41,13 @@ namespace budget.Shared
             {
                 startDate = DateOnly.ParseExact(opts.StartDate, cfg.OptionsConfig.DateFormats, CultureInfo.InvariantCulture);
             }
+            if(curDate.CompareTo(startDate) < 0 || curDate.CompareTo(endDate) >= 0)
+            {
+                throw new ArgumentException($"Current date ({curDate}) is not between start ({startDate}) and end ({endDate}), please try again");
+            }
 
             if (!long.TryParse(opts.CurrentBudget, out var curBudget)) {
-                throw new ArgumentException("current-budget option is wrong, please try again");
+                throw new ArgumentException("Current-budget option is wrong, please try again");
             }
 
             IWriter writer;

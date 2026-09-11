@@ -21,19 +21,27 @@ namespace budget.Shared
             sb.AppendLine($"Текущий момент: {r.CurDate}");
             sb.AppendLine($"Конец периода:  {r.EndDate}");
             sb.AppendLine($"Текущий бюджет: {r.CurentBudget}");
-            sb.AppendLine();
-            sb.AppendLine($"Таблица - расхода");
-            sb.AppendLine($"| Текущий (р/день) | Оптимальный (р/день) | Разница (р/день) | ");
 
+            sb.AppendLine();
+            sb.AppendLine($"Таблица - Текущие траты");
+            sb.AppendLine($"| Сумма | Дата | Категория | ");
+            sb.AppendLine($"|---|---|---|");
+            foreach (var expense in r.Expenses) {
+                sb.AppendLine($"| {Math.Round(expense.Sum, 2)} | {expense.Date} | {expense.Category} |");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine($"Таблица - Расход");
+            sb.AppendLine($"| Текущий (р/день) | Оптимальный (р/день) | Разница (р/день) | ");
             sb.AppendLine($"|---|---|---|");
 
             sb.AppendLine($"| {Math.Round(r.Difference.CurrentRate, 2)} | {Math.Round(r.OptimalRate, 2)} | {Math.Round(r.Difference.Value, 2)} | ");
-            sb.AppendLine($"Вывод: {(r.Conclusion ? ":) Будет положительный остаток" : ":( Бюджета не хватит")}");
+            sb.AppendLine($"Вывод: {(r.Difference.Value>=0 ? ":) Будет положительный остаток" : ":( Бюджета не хватит")}");
             if (r.PossibleStrategies.Count != 0)
             {
                 sb.AppendLine();
                 sb.AppendLine($"Попытка посчитать расход при отсутвии трат на ближайшие дни:");
-                sb.AppendLine($"Таблица - прогноз расхода");
+                sb.AppendLine($"Таблица - Прогноз расхода");
                 sb.AppendLine($"| Без трат (дней) | Будет расход (р/день) | Разница (р/день) | Комментарий |");
                 sb.AppendLine($"|---|---|---|---|");
                 int i = 0;
@@ -41,6 +49,10 @@ namespace budget.Shared
                 {
                     sb.AppendLine($"| {++i} | {Math.Round(ps.CurrentRate, 2)} | {Math.Round(ps.Value, 2)} | {(ps.Value > 0 ? "<- можно жить |" : "|")}");
                 }
+
+                sb.AppendLine();
+                sb.AppendLine($"Текущий остаток ({Math.Round(r.NewBudget, 2)})");
+                sb.AppendLine($"Сегодня можно потратить не более ( {Math.Round(r.NewOptimalRate, 2)} ), а завтра можно будет больше!. Так получится протянуть до конца периода. Не забудьте добавить новую запись к расходам.");
             }
 
             lines_.Add(sb);

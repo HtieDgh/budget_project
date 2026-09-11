@@ -28,30 +28,34 @@ namespace budget.Services
         /// </summary>
         public record Report
         {
-            public decimal OptimalRate;
-            public Difference Difference;
-            public List<Difference> PossibleStrategies;
-            public bool Conclusion;
-            public DateOnly StartDate;
-            public DateOnly EndDate;
-            public DateOnly CurDate;
-            public decimal CurentBudget;
+            public decimal OptimalRate;     //Оптимальный ср. расход (р/день)
+            public Difference Difference;   //Текущая разница на основе текущего ср. расхода (р/день)
+            public List<Difference> PossibleStrategies;//Возможные стратегии в случае нехватки бюджета
+            public DateOnly StartDate;      //Начало периода
+            public DateOnly EndDate;        //Конец периода
+            public DateOnly CurDate;        //Текущий момент
+            public decimal CurentBudget;    //Текущий бюджет
+            public decimal NewBudget;       //Остаток в конце месяца
+            public decimal NewOptimalRate;  //Оптимальный расход  (р/день) с учетом кол-ва оставшихся дней и текущего остатка в конце месяца
+            public List<Expense> Expenses;
 
-            public Report(decimal optimalRate, decimal difference, bool conclusion, decimal currentRate, DateOnly startDate, DateOnly endDate, DateOnly curDate, decimal curentBudget)
+            public Report(List<Expense> expenses, decimal optimalRate, decimal difference, decimal currentRate, DateOnly startDate, DateOnly endDate, DateOnly curDate, decimal curentBudget, decimal newBudget = 0.0m, decimal newOptimalRate = 0.0m)
             {
                 OptimalRate = optimalRate;
                 Difference = new(difference, currentRate);
-                Conclusion = conclusion;
                 StartDate = startDate;
                 EndDate = endDate;
                 CurDate = curDate;
                 CurentBudget = curentBudget;
                 PossibleStrategies = new List<Difference>();
+                NewOptimalRate = newOptimalRate;
+                NewBudget = newBudget;
+                Expenses = expenses;
             }
         }
 
         /// <summary>
-        /// Реализация синхронного и параллельного режима
+        /// Главный метод, основная логика
         /// </summary>
         /// <returns></returns>
         public override void Run()
@@ -71,29 +75,35 @@ namespace budget.Services
             var optimalRate = currentBudget_ / (decimal)dayCount; //Оптимальный средний расход за период (оптимальный значит такой расход который оставит ноль в конце периода)
 
             var diff = optimalRate - cRate;
+
+            decimal newBudget = currentBudget_ - tmplinq.Sum(e => e.Date.CompareTo(curDate_) <= 0 ? e.Sum : 0.0m);//Остаток в конце месяца
+
             var report = new Report(
+                    expenses_,
                     optimalRate,
                     diff,
-                    optimalRate >= cRate,
                     cRate,
                     startDate_,
                     endDate_,
                     curDate_,
-                    currentBudget_
+                    currentBudget_,
+                    newBudget
                 );
-            
-            if (diff < 0.0m)//Если бюджета все же не хватит, попробовать посчитать расходы если не тратить некоторое время
+
+            if (diff < 0.0m)//Если бюджета все же не хватит, попробовать посчитать расходы если не тратить некоторое время или тратить не больше чем некоторое значение
             {
                 var intermediateDiff = -1.0m;
-                var newRate=0.0m;
+                var newRate = 0.0m;
                 DateOnly newDate;
                 for (var i = 1; intermediateDiff < 0.0m && i < maxPossibleStrategies_; i++)
                 {
-                    newDate = curDate_.AddDays(i);//TODO учесть что возможен выход за endDate_
+                    newDate = curDate_.AddDays(i);//TODO Если произошел выход за endDate_ то это лишь означает что траты уже превысили бюджет. Следует не тратить даже после получения зарплаты?
                     newRate = tmplinq.Sum(e => e.Date.CompareTo(newDate) <= 0 ? e.Sum : 0.0m) / (newDate.DayNumber - startDate_.DayNumber);
                     intermediateDiff = optimalRate - newRate;
                     report.PossibleStrategies.Add(new(intermediateDiff, newRate));
                 }
+
+                report.NewOptimalRate = newBudget / (endDate_.DayNumber - curDate_.DayNumber);
             }
 
             writer_.AddReport(

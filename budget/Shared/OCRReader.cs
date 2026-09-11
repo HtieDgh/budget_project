@@ -140,12 +140,14 @@ namespace budget.Shared
         public static List<string[]> Parse_(string text, int year = 2026)
         {
             var list = new List<string[]> { Config.i().ExpenseConfig.HeaderShema };
+            // Нормализуем пробелы (OCR часто ставит неразрывный пробел)
+            text = text.Replace('\u00A0', ' ');
             // Шаблон даты: день + месяц + (опционально ", день недели")
             string monthPattern = @"(?:январ|феврал|март|апрел|ма[йя]|июн|июл|август|сентябр|октябр|ноябр|декабр)\w*";
             string datePattern = $@"\b(?<day>\d{{1,2}})\s+(?<month>{monthPattern})(?:,\s*(?<weekday>\w+))?";
 
             // Шаблон суммы: "3 896,90 Р" или "674,57 Р" или "741 Р"
-            string moneyPattern = @"(?<amount>\d{1,3}(?:\s\d{3})*(?:,\d{2})?)\s?Р";
+            string moneyPattern = @"(?<amount>\d{1,3}(?:\s\d{3})*(?:,\d{2})?|\d{4,}(?:,\d{2})?|\d{1,3}(?:,\d{2})?)\s?Р";
 
             // Находим все даты в тексте
             var dateMatches = Regex.Matches(text, datePattern);
