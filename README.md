@@ -82,7 +82,7 @@ Sum;Date;Category
 Разработан метод парсинга данных из скриншотов истории Сбера, чтоб не вводить csv файлы вручную. Это должно упростить учет текущего расхода бюджета. Чтобы воспользоваться такой возможностью необходимо:
 
 * Скачать Языковые данные: необходимо скачать файл rus.traineddata (для русского) из официального [репозитория](https://github.com/tesseract-ocr/tessdata/blob/main/rus.traineddata) и положить его в папку `.tessdata/`. Файл должен присутствовать при запуске программы.
-* Теперь достаточно скинуть скрины в директории и указать путь до нее:
+* Теперь достаточно скинуть скрины в директорию и указать путь до нее:
 
 ```
 budget --from-images /path/to/img/dir -s 2026-09-01 -e 2026-10-01 -b 15000
@@ -144,10 +144,10 @@ budget -s 2026-09-01 -e 2026-10-01 -b 11369.74 --voice
 
 Для корректной сборки локально должны присутствовать директории `.tessdata` и `.voice_models`, а в этих директориях соответствующие модели. Требуется:
 
-* (rus.traineddata)[https://github.com/tesseract-ocr/tessdata/blob/main/rus.traineddata] - скачать и поместить в папку `.tessdata`. Должно получится `.tessdata/rus.traineddata`
-* (vosk-model-small-ru-0.22)[https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip] - разархивировать и поместить содержимое в папку `.voice_models`. Должно получится `.voice_models/vosk-model-small-ru-0.22/`
+* [rus.traineddata](https://github.com/tesseract-ocr/tessdata/blob/main/rus.traineddata) - скачать и поместить в папку `.tessdata`. Должно получится `.tessdata/rus.traineddata`
+* [vosk-model-small-ru-0.22](https://alphacephei.com/vosk/models/vosk-model-small-ru-0.22.zip) - разархивировать и поместить содержимое в папку `.voice_models`. Должно получится `.voice_models/vosk-model-small-ru-0.22/`
 
-Эти пути поместите в конфиг, информация о нем представлена ниже.
+Эти пути укажите в конфиг-файле, информация о нем представлена ниже.
 
 ### Настройка проекта
 
