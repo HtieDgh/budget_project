@@ -8,8 +8,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove=".voice_models\**" />
     <Compile Remove="Views\**" />
+    <EmbeddedResource Remove=".voice_models\**" />
     <EmbeddedResource Remove="Views\**" />
+    <None Remove=".voice_models\**" />
     <None Remove="Views\**" />
   </ItemGroup>
   <ItemGroup>
@@ -20,8 +23,11 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="FluentCommandLineParser" Version="1.4.3" />
+    <PackageReference Include="NAudio" Version="3.1.0" />
+    <PackageReference Include="NAudio.Wasapi" Version="3.1.0" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.12" />
     <PackageReference Include="Tesseract" Version="5.2.0" />
+    <PackageReference Include="Vosk" Version="0.3.38" />
   </ItemGroup>
 
   <ItemGroup>

@@ -22,6 +22,8 @@ namespace budget
             public string? CurDate { get; set; }
             public string? CurrentBudget { get; set; }
             public string? InputOcrImgesDirectory { get; set; }
+            public bool VoiceRecognition { get; set; }
+            public bool IsCurrentMonth { get; set; }
 
             public static readonly string InputExpenseFilePath_d = "Input file in csv format. Default as in config file.";
             public static readonly string OutputFilePath_d = "Write JSON output to file. File wil be overitten.";
@@ -30,6 +32,8 @@ namespace budget
             public static readonly string CurDate_d = "Current date. Default is today.";
             public static readonly string CurrentBudget_d = "Current budget.";
             public static readonly string InputOcrImgesDirectory_d = "Use OCR to read Sberbank mobile app screenshotes. Option -i will be ignored.";
+            public static readonly string VoiceRecognition_d = "Use VOSK and Naudio to read from speach.";
+            public static readonly string IsCurrentMonth_d = "Use current month for Voice recognition parsing.";
             public static readonly string helpText =
                 """
                 USAGE:
@@ -137,6 +141,16 @@ namespace budget
              .As('f', "from-images")
              .WithDescription(InputOcrImgesDirectory_d);
 
+            p.Setup(arg => arg.VoiceRecognition)
+             .As("voice")
+             .WithDescription(VoiceRecognition_d)
+             .SetDefault(false);
+
+            p.Setup(arg => arg.IsCurrentMonth)
+             .As("current-month")
+             .WithDescription(IsCurrentMonth_d)
+             .SetDefault(false);
+
             p.Setup(arg => arg.CurrentBudget)
              .As('b', "current-budget")
              .WithDescription(CurrentBudget_d)
@@ -157,7 +171,8 @@ namespace budget
                 Config.i().SetConfig(
                     root.GetProperty("Expense").Deserialize<ExpenseConfig>() ?? throw new Exception("config can't be read"),
                     root.GetProperty("Options").Deserialize<OptionsConfig>() ?? throw new Exception("config can't be read"),
-                    root.GetProperty("OCRReader").Deserialize<OCRReaderConfig>() ?? throw new Exception("config can't be read")
+                    root.GetProperty("OCRReader").Deserialize<OCRReaderConfig>() ?? throw new Exception("config can't be read"),
+                    root.GetProperty("VoiceReader").Deserialize<VoiceReaderConfig>() ?? throw new Exception("config can't be read")
                 );
 
                 p.Setup(arg => arg.InputExpenseFilePath)
@@ -207,7 +222,7 @@ namespace budget
                 var controller = new Controller();
 
                 //Регистрация сервисов
-                controller.addService(ExpenseRateServiceFactory.i().CreateService(opts, Config.i()));
+                controller.addService(ExpenseRateServiceFactory.CreateService(opts, Config.i()));
 
                 //Запуск
                 controller.Run();

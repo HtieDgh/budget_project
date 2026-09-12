@@ -24,6 +24,14 @@
     {
         public required string DefaultTessdataDirectory { get; set; }
     }
+    /// <summary>
+    /// Пердставление конфигов: VoiceReader
+    /// </summary>
+    public class VoiceReaderConfig
+    {
+        public required string DefaultVoiceModelDirectory { get; set; }
+        public required string CurrentLanguageModel { get; set; }
+    }
 
     public class Config
     {
@@ -31,6 +39,7 @@
         private OCRReaderConfig? ocrConfig_;
         private OptionsConfig? optionsConfig_;
         private ExpenseConfig? expenseConfig_;
+        private VoiceReaderConfig? voiceReaderConfig_;
 
         Config() { }
         public static Config i() {
@@ -41,7 +50,7 @@
         {
             get
             {
-                if (expenseConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to expenseConfig");
+                if (expenseConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to ExpenseConfig");
                 else return expenseConfig_;
             }
             private set => expenseConfig_ = value;
@@ -50,7 +59,7 @@
         {
             get
             {
-                if (optionsConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to expenseConfig");
+                if (optionsConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to OptionsConfig");
                 else return optionsConfig_;
             }
             private set => optionsConfig_ = value;
@@ -59,16 +68,26 @@
         {
             get
             {
-                if (ocrConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to expenseConfig");
+                if (ocrConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to OcrConfig");
                 else return ocrConfig_;
             }
             private set => ocrConfig_ = value;
         }
-        public Config SetConfig(ExpenseConfig expenseConfig, OptionsConfig optionsConfig, OCRReaderConfig ocrConfig)
+        public VoiceReaderConfig VoiceReaderConfig
+        {
+            get
+            {
+                if (voiceReaderConfig_ is null) throw new Exception("Please, do Config.i().SetConfig before acces to VoiceReaderConfig");
+                else return voiceReaderConfig_;
+            }
+            private set => voiceReaderConfig_ = value;
+        }
+        public Config SetConfig(ExpenseConfig expenseConfig, OptionsConfig optionsConfig, OCRReaderConfig ocrConfig, VoiceReaderConfig voiceConfig)
         {
             ExpenseConfig = expenseConfig;
             OptionsConfig = optionsConfig;
             OcrConfig = ocrConfig;
+            VoiceReaderConfig = voiceConfig;
             return this;
         }
 

@@ -240,5 +240,6 @@ _Pvt_Extensions
 .venv/
 .imgs/
 .tessdata/
+.voice_models/
 csv/
 Properties/

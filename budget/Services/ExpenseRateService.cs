@@ -11,9 +11,9 @@ namespace budget.Services
         protected readonly DateOnly endDate_;
         protected readonly DateOnly curDate_;
         protected readonly List<Expense> expenses_;
-        protected readonly long currentBudget_;
+        protected readonly decimal currentBudget_;
         protected readonly int maxPossibleStrategies_;
-        public ExpenseRateService(int maxPossibleStrategies, List<Expense> expenses, IWriter writer, long currentBudget, DateOnly start, DateOnly end, DateOnly cur) : base(writer)
+        public ExpenseRateService(int maxPossibleStrategies, List<Expense> expenses, IWriter writer, decimal currentBudget, DateOnly start, DateOnly end, DateOnly cur) : base(writer)
         {
             startDate_ = start;
             endDate_ = end;
@@ -28,29 +28,29 @@ namespace budget.Services
         /// </summary>
         public record Report
         {
-            public decimal OptimalRate;     //Оптимальный ср. расход (р/день)
-            public Difference Difference;   //Текущая разница на основе текущего ср. расхода (р/день)
-            public List<Difference> PossibleStrategies;//Возможные стратегии в случае нехватки бюджета
-            public DateOnly StartDate;      //Начало периода
-            public DateOnly EndDate;        //Конец периода
-            public DateOnly CurDate;        //Текущий момент
-            public decimal CurentBudget;    //Текущий бюджет
-            public decimal NewBudget;       //Остаток в конце месяца
-            public decimal NewOptimalRate;  //Оптимальный расход  (р/день) с учетом кол-ва оставшихся дней и текущего остатка в конце месяца
-            public List<Expense> Expenses;
+            public decimal optimalRate;     //Оптимальный ср. расход (р/день)
+            public Difference difference;   //Текущая разница на основе текущего ср. расхода (р/день)
+            public List<Difference> possibleStrategies;//Возможные стратегии в случае нехватки бюджета
+            public DateOnly startDate;      //Начало периода
+            public DateOnly endDate;        //Конец периода
+            public DateOnly curDate;        //Текущий момент. Обязательно должен быть больше startDate и меньше endDate
+            public decimal curentBudget;    //Текущий бюджет
+            public decimal newBudget;       //Остаток в конце месяца
+            public decimal newOptimalRate;  //Оптимальный расход  (р/день) с учетом кол-ва оставшихся дней и текущего остатка в конце месяца
+            public List<Expense> expenses;
 
             public Report(List<Expense> expenses, decimal optimalRate, decimal difference, decimal currentRate, DateOnly startDate, DateOnly endDate, DateOnly curDate, decimal curentBudget, decimal newBudget = 0.0m, decimal newOptimalRate = 0.0m)
             {
-                OptimalRate = optimalRate;
-                Difference = new(difference, currentRate);
-                StartDate = startDate;
-                EndDate = endDate;
-                CurDate = curDate;
-                CurentBudget = curentBudget;
-                PossibleStrategies = new List<Difference>();
-                NewOptimalRate = newOptimalRate;
-                NewBudget = newBudget;
-                Expenses = expenses;
+                this.optimalRate = optimalRate;
+                this.difference = new(difference, currentRate);
+                this.startDate = startDate;
+                this.endDate = endDate;
+                this.curDate = curDate;
+                this.curentBudget = curentBudget;
+                possibleStrategies = new List<Difference>();
+                this.newOptimalRate = newOptimalRate;
+                this.newBudget = newBudget;
+                this.expenses = expenses;
             }
         }
 
@@ -65,29 +65,28 @@ namespace budget.Services
                     e => e.Date.CompareTo(startDate_) >= 0 && e.Date.CompareTo(endDate_) == -1
                 );
 
-            var cRate = tmplinq
-                .Sum(e => e.Date.CompareTo(curDate_) <= 0 ? e.Sum : 0.0m);//Сумма всех расходов
+            var intermediateSum = tmplinq.Sum(e => e.Date.CompareTo(curDate_) <= 0 ? e.Sum : 0.0m);//Сумма всех расходов
 
-            cRate = cRate / (curDate_.DayNumber - startDate_.DayNumber);//Текущий расход с учетом кол-ва дней
+            var cRate = intermediateSum / (curDate_.DayNumber - startDate_.DayNumber);//Текущий расход с учетом кол-ва дней
 
             var dayCount = endDate_.DayNumber - startDate_.DayNumber;//Общее кол-во дней
 
-            var optimalRate = currentBudget_ / (decimal)dayCount; //Оптимальный средний расход за период (оптимальный значит такой расход который оставит ноль в конце периода)
+            var optimalRate = currentBudget_ / dayCount; //Оптимальный средний расход за период (оптимальный значит такой расход который оставит ноль в конце периода)
 
             var diff = optimalRate - cRate;
 
-            decimal newBudget = currentBudget_ - tmplinq.Sum(e => e.Date.CompareTo(curDate_) <= 0 ? e.Sum : 0.0m);//Остаток в конце месяца
+            decimal newBudget = currentBudget_ - intermediateSum;//Остаток в конце месяца
 
             var report = new Report(
-                    expenses_,
-                    optimalRate,
-                    diff,
-                    cRate,
-                    startDate_,
-                    endDate_,
-                    curDate_,
-                    currentBudget_,
-                    newBudget
+                      expenses: expenses_,
+                   optimalRate: optimalRate,
+                    difference: diff,
+                   currentRate: cRate,
+                     startDate: startDate_,
+                       endDate: endDate_,
+                       curDate: curDate_,
+                  curentBudget: currentBudget_,
+                     newBudget: newBudget
                 );
 
             if (diff < 0.0m)//Если бюджета все же не хватит, попробовать посчитать расходы если не тратить некоторое время или тратить не больше чем некоторое значение
@@ -100,10 +99,10 @@ namespace budget.Services
                     newDate = curDate_.AddDays(i);//TODO Если произошел выход за endDate_ то это лишь означает что траты уже превысили бюджет. Следует не тратить даже после получения зарплаты?
                     newRate = tmplinq.Sum(e => e.Date.CompareTo(newDate) <= 0 ? e.Sum : 0.0m) / (newDate.DayNumber - startDate_.DayNumber);
                     intermediateDiff = optimalRate - newRate;
-                    report.PossibleStrategies.Add(new(intermediateDiff, newRate));
+                    report.possibleStrategies.Add(new(intermediateDiff, newRate));
                 }
 
-                report.NewOptimalRate = newBudget / (endDate_.DayNumber - curDate_.DayNumber);
+                report.newOptimalRate = newBudget / (endDate_.DayNumber - curDate_.DayNumber);
             }
 
             writer_.AddReport(

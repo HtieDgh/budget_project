@@ -10,45 +10,25 @@ namespace budget.Shared
 {
     public class OCRReader : IReader
     {
-        public class OCRConfig
-        {
-            public string[] ImagePaths { get; private set; }//путь до файла
-            public string TessdataPath { get; private set; }// Путь "./tessdata" должен вести к папке с файлами .traineddata
-            public string TessLanguage { get; private set; }// Язык распознования
-            public string TessPSM { get; private set; }// Значение PSM для движка (PSM 6 - единый блок текста, PSM 3 - авто), по умолчанию должно быть 6. 
 
-            public OCRConfig(string[] imgPaths, string tessdataPath, string tessLanguage, string tessPSM)
-            {
-                ImagePaths = imgPaths;
-                TessdataPath = tessdataPath;
-                TessLanguage = tessLanguage;
-                TessPSM = tessPSM;
-            }
+        private string[] ImagePaths_;//путь до файла
+        private string TessdataPath_;// Путь "./tessdata" должен вести к папке с файлами .traineddata
+        private string TessLanguage_;// Язык распознования
+        private string TessPSM_;// Значение PSM для движка (PSM 6 - единый блок текста, PSM 3 - авто), по умолчанию должно быть 6. 
+        private string[] ExpenseHeaderShema_;// текущая структура заголовка expense 
 
-            // Конфиг по умолчанию
-            public static OCRConfig GetDefault(string dir)
-            {
-                return new OCRConfig(
-                     imgPaths: Directory.GetFiles(dir, "*.jpg"),//поиск всех файлов в папке, возврат полных путей
-                     tessdataPath: Config.i().OcrConfig.DefaultTessdataDirectory,
-                     tessLanguage: "rus",
-                     tessPSM: "6"
-                );
-            }
-        }
-        private OCRConfig cfg_;
-
-        public OCRReader(string imgdir)
+        public OCRReader(string imgdir, string tessdataPath, string tessLanguage, string tessPSM, string[] expenseHeaderShema)
         {
             if (!string.IsNullOrEmpty(imgdir) && !Directory.Exists(imgdir))
             {
                 throw new ArgumentException($"OCR: No access to ({imgdir})");
             }
-            cfg_ = OCRConfig.GetDefault(imgdir);
-        }
-        public OCRReader(OCRConfig config)
-        {
-            cfg_ = config;
+            ImagePaths_ = Directory.GetFiles(imgdir, "*.jpg");
+            TessdataPath_ = tessdataPath;
+            TessLanguage_ = tessLanguage;
+            TessPSM_ = tessPSM;
+            ExpenseHeaderShema_ = expenseHeaderShema;
+
         }
 
         public IEnumerable<string[]> Read()
@@ -66,7 +46,7 @@ namespace budget.Shared
             var sb = new StringBuilder();
             // Шаг 1: Предобработка изображения (упрощенная)
             // Для сложных случаев лучше использовать OpenCVSharp или Emgu CV
-            foreach (var imgPath in cfg_.ImagePaths)
+            foreach (var imgPath in ImagePaths_)
             {
                 using (var originalBitmap = new Bitmap(imgPath))
                 {
@@ -82,10 +62,10 @@ namespace budget.Shared
                         {
                             // Шаг 2: Инициализация движка
                             // Путь "./tessdata" должен вести к папке с файлами .traineddata
-                            using (var engine = new TesseractEngine(cfg_.TessdataPath, cfg_.TessLanguage, EngineMode.Default))
+                            using (var engine = new TesseractEngine(TessdataPath_, TessLanguage_, EngineMode.Default))
                             {
                                 // Устанавливаем режим сегментации страницы 
-                                engine.SetVariable("tessedit_pageseg_mode", cfg_.TessPSM);
+                                engine.SetVariable("tessedit_pageseg_mode", TessPSM_);
 
                                 // Шаг 3: Загрузка и обработка
                                 using (var img = Pix.LoadFromFile(tempPath))
@@ -137,9 +117,9 @@ namespace budget.Shared
             return processed;
         }
 
-        public static List<string[]> Parse_(string text, int year = 2026)
+        public List<string[]> Parse_(string text, int year = 2026)
         {
-            var list = new List<string[]> { Config.i().ExpenseConfig.HeaderShema };
+            var list = new List<string[]> { ExpenseHeaderShema_ };
             // Нормализуем пробелы (OCR часто ставит неразрывный пробел)
             text = text.Replace('\u00A0', ' ');
             // Шаблон даты: день + месяц + (опционально ", день недели")
