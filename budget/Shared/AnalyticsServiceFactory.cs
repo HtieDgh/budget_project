@@ -74,7 +74,7 @@ namespace budget.Shared
             else if(opts.InputOcrImgesDirectory is not null)
             {
                 rf = Repository.ReadFrom.OCR;
-                rfArgument = cfg.OcrConfig.DefaultTessdataDirectory;
+                rfArgument = opts.InputOcrImgesDirectory;
             }
             
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

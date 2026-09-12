@@ -78,7 +78,7 @@ namespace budget.Services
             decimal newBudget = currentBudget_ - intermediateSum;//Остаток в конце месяца
 
             var report = new Report(
-                      expenses: expenses_,
+                      expenses: tmplinq.ToList(),
                    optimalRate: optimalRate,
                     difference: diff,
                    currentRate: cRate,
